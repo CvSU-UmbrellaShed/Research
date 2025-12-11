@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root{
+            --bg-1:#071428;
+            --card:#0e2230;
+            --card-2:#0b3142;
+            --accent:#15c7b6;
+            --accent-2:#2fb7ff;
+            --muted:#9fb4c7;
+            --success:#2ecc71;
+            --danger:#ff6b6b;
+            --warning:#ffc107;
+        }
+
+        *{box-sizing:border-box;margin:0;padding:0}
+        html,body{height:100%;width:100%}
+        body{
+            font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+            background:linear-gradient(180deg,#052033 0%,var(--bg-1) 100%);
+            color:#cfe8ef;
+            overflow-x:hidden;
+        }
+
+        .header{
+            background:rgba(0,0,0,0.4);
+            padding:20px;
+            border-bottom:1px solid rgba(255,255,255,0.05);
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+        }
+
+        .header h1{color:var(--accent);font-size:20px;margin:0}
+        .header p{color:var(--muted);font-size:12px;margin:4px 0 0}
+        .header-right{display:flex;gap:10px;align-items:center}
+        .status-pill{padding:6px 12px;border-radius:20px;font-size:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.1)}
+        .status-online{color:var(--success);border-color:var(--success)}
+        .status-offline{color:var(--danger);border-color:var(--danger)}
+
+        .container{max-width:1400px;margin:0 auto;padding:20px}
+
+        .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+        @media(max-width:1200px){.grid-4{grid-template-columns:repeat(2,1fr)}}
+        @media(max-width:768px){.grid-4{grid-template-columns:1fr}}
+
+        .card{background:linear-gradient(180deg,var(--card) 0%,var(--card-2) 100%);border-radius:10px;padding:18px;border:1px solid rgba(255,255,255,0.08);box-shadow:0 8px 32px rgba(0,0,0,0.3)}
+
+        .card h3{color:var(--accent);font-size:14px;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px}
+
+        /* Weather Card */
+        .weather-tiles{display:flex;gap:12px}
+        .weather-tile{flex:1;background:rgba(255,255,255,0.03);padding:12px;border-radius:8px;text-align:center;border:1px solid rgba(255,255,255,0.05)}
+        .weather-tile .icon{font-size:24px;color:var(--accent-2);margin-bottom:8px}
+        .weather-tile .value{font-size:24px;font-weight:700;color:#fff}
+        .weather-tile .label{font-size:11px;color:var(--muted);margin-top:4px}
+
+        .warning-box{background:rgba(255,0,0,0.08);border:1px solid rgba(255,0,0,0.15);border-radius:6px;padding:10px;margin-top:12px;color:var(--danger);font-size:12px}
+        .warning-box i{margin-right:6px}
+
+        /* System Status */
+        .status-list{list-style:none}
+        .status-list li{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:12px;color:var(--muted)}
+        .status-list li:last-child{border-bottom:none}
+        .status-list .label{font-weight:600}
+        .status-list .value{color:#fff}
+
+        /* Actuator Controls */
+        .actuator-buttons{display:flex;gap:8px;margin-bottom:12px}
+        .actuator-buttons button{flex:1;padding:8px;border-radius:6px;border:none;cursor:pointer;font-weight:700;font-size:11px}
+        .btn-deploy{background:var(--success);color:#07221a}
+        .btn-retract{background:var(--danger);color:#fff}
+
+        .actuator-item{background:rgba(255,255,255,0.03);padding:10px;border-radius:6px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,0.05)}
+        .actuator-item:last-child{margin-bottom:0}
+        .actuator-item strong{color:#fff;font-size:12px}
+        .actuator-actions{display:flex;gap:6px}
+        .btn-small{padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:var(--accent-2);cursor:pointer;font-size:10px;font-weight:700}
+            .btn-small.active{background:var(--accent-2);color:#07222a;box-shadow:0 2px 8px rgba(47,183,255,0.15);border-color:var(--accent-2);}
+        .btn-small.secondary{color:var(--muted);border-color:rgba(255,255,255,0.05)}
+        .btn-small:disabled{opacity:0.5;cursor:not-allowed}
+
+        /* Control Mode */
+        .mode-buttons{display:flex;gap:10px;margin:12px 0}
+        .btn-mode{flex:1;padding:12px;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:12px}
+        .btn-mode.active{background:linear-gradient(90deg,var(--accent-2),var(--accent));color:#03222a}
+        .btn-mode.inactive{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.1)}
+
+        .mode-desc{font-size:11px;color:var(--muted);margin-top:8px;text-align:center}
+
+        /* Activity Log */
+        .log-container{max-height:300px;overflow-y:auto}
+        .log-entry{padding:8px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:11px;color:var(--muted);display:flex;justify-content:space-between}
+        .log-entry:last-child{border-bottom:none}
+        .log-message{flex:1}
+        .log-time{color:#666;margin-left:12px;white-space:nowrap}
+
+        /* Info Section */
+        .info-item{padding:8px 0;font-size:11px;color:var(--muted)}
+        .info-item strong{color:#fff}
+
+        /* Config Section */
+        .config-section{background:rgba(255,255,255,0.03);padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05)}
+        .config-section label{display:block;font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600}
+        .config-section input{width:100%;padding:8px;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;font-size:12px;margin-bottom:8px}
+        .config-section button{width:100%;padding:8px;background:var(--accent-2);color:#03222a;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:11px}
+
+        .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+        @media(max-width:768px){.grid-2{grid-template-columns:1fr}}
+
+        ::-webkit-scrollbar{width:6px}
+        ::-webkit-scrollbar-track{background:transparent}
+        ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div>
+            <h1><i class="fas fa-cloud-rain"></i> Control Dashboard</h1>
+            <p>ESP32 Rain Sensor & Actuator System</p>
+        </div>
+        <div class="header-right">
+            <div style="color: var(--muted); font-size: 12px;">
+                <span id="userDisplay">User</span>
+            </div>
+            <button id="logoutBtn" onclick="handleLogout()" style="padding:6px 12px;border-radius:8px;border:none;background:rgba(255,107,107,0.2);color:#ff6b6b;cursor:pointer;font-size:11px;font-weight:700;border:1px solid #ff6b6b">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+            <div class="status-pill status-offline" id="statusPill">
+                <i class="fas fa-circle" style="font-size:8px;margin-right:4px"></i><span id="statusText">Disconnected</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Config -->
+        <div class="config-section" style="margin-bottom:20px">
+            <label for="esp32IpInput">ESP32 IP Address</label>
+            <input type="text" id="esp32IpInput" placeholder="192.168.1.100">
+            <button onclick="saveConfig()"><i class="fas fa-save"></i> Save</button>
+        </div>
+
+        <!-- 4-Column Grid -->
+        <div class="grid-4">
+            <!-- Weather Status -->
+            <div class="card">
+                <h3><i class="fas fa-cloud"></i> Weather Status</h3>
+                <div class="weather-tiles">
+                    <div class="weather-tile">
+                        <div class="icon"><i class="fas fa-thermometer-half"></i></div>
+                        <div class="value" id="temperatureValue">--</div>
+                        <div class="label">Temperature</div>
+                    </div>
+                    <div class="weather-tile">
+                        <div class="icon"><i class="fas fa-tint"></i></div>
+                        <div class="value" id="humidityValue">--</div>
+                        <div class="label">Humidity</div>
+                    </div>
+                </div>
+                <div class="warning-box">
+                    <i class="fas fa-circle" style="font-size:6px"></i>
+                    Bad weather - shed deployed
+                </div>
+            </div>
+
+            <!-- System Status -->
+            <div class="card">
+                <h3><i class="fas fa-server"></i> System Status</h3>
+                <ul class="status-list">
+                    <li><span class="label">Connection</span><span class="value" id="connStatus">Online</span></li>
+                    <li><span class="label">Battery</span><span class="value">79%</span></li>
+                    <li><span class="label">CPU Usage</span><span class="value">31%</span></li>
+                    <li><span class="label">Uptime</span><span class="value">0d 0h 1m 54s</span></li>
+                </ul>
+            </div>
+
+            <!-- Actuator Controls -->
+            <div class="card">
+                <h3><i class="fas fa-tools"></i> Actuator Controls</h3>
+                <div class="actuator-buttons">
+                    <button class="btn-deploy" id="deployAllBtn" onclick="deployAll()">DEPLOY ALL</button>
+                    <button class="btn-retract" id="retractAllBtn" onclick="retractAll()">RETRACT ALL</button>
+                </div>
+                <div class="actuator-item">
+                    <strong>LED Lighting</strong>
+                    <div class="actuator-actions">
+                        <button class="btn-small" id="ledOn" onclick="controlActuator('led','on')">ON</button>
+                        <button class="btn-small secondary" id="ledOff" onclick="controlActuator('led','off')">OFF</button>
+                    </div>
+                </div>
+                <div class="actuator-item">
+                    <strong>Cooler/Fan</strong>
+                    <div class="actuator-actions">
+                        <button class="btn-small" id="coolerOn" onclick="controlActuator('cooler','on')">ON</button>
+                        <button class="btn-small secondary" id="coolerOff" onclick="controlActuator('cooler','off')">OFF</button>
+                    </div>
+                </div>
+                <div class="actuator-item">
+                    <strong>Umbrella Motor</strong>
+                    <div class="actuator-actions">
+                        <button class="btn-small" id="umbOpen" onclick="controlActuator('umbrella','open')">OPEN</button>
+                        <button class="btn-small secondary" id="umbClose" onclick="controlActuator('umbrella','close')">CLOSE</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Mode -->
+            <div class="card">
+                <h3><i class="fas fa-bolt"></i> Control Mode</h3>
+                <div class="mode-buttons">
+                    <button class="btn-mode active" id="autoBtn" onclick="setMode('auto')">AUTOMATIC</button>
+                    <button class="btn-mode inactive" id="manualBtn" onclick="setMode('manual')">MANUAL</button>
+                </div>
+                <div class="mode-desc">System responding to weather sensors automatically</div>
+            </div>
+        </div>
+
+        <!-- Activity Log & Info -->
+        <div class="grid-2">
+            <div class="card">
+                <h3><i class="fas fa-clipboard-list"></i> Activity Log</h3>
+                <div class="log-container" id="logContainer">
+                    <div class="log-entry"><span class="log-message">System initialized</span><span class="log-time">00:00:00</span></div>
+                </div>
+            </div>
+            <div class="card">
+                <h3><i class="fas fa-info-circle"></i> Info</h3>
+                <div class="info-item">Last update: <strong id="lastUpdate">Never</strong></div>
+                <div class="info-item">Auto-refresh: <strong id="autoRefresh">Off</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== STATE =====
+        let ESP32_IP = localStorage.getItem('esp32_ip') || '';
+        let isConnected = false;
+        let autoRefreshInterval = null;
+        let actuators = {led: false, cooler: false, umbrella: 'closed'};
+        let currentMode = 'auto';
+
+        // ===== DOM ELEMENTS =====
+        const esp32IpInput = document.getElementById('esp32IpInput');
+        const statusText = document.getElementById('statusText');
+        const statusPill = document.getElementById('statusPill');
+        const logContainer = document.getElementById('logContainer');
+        const tempValueEl = document.getElementById('temperatureValue');
+        const humidityValueEl = document.getElementById('humidityValue');
+        const lastUpdateEl = document.getElementById('lastUpdate');
+        const autoRefreshEl = document.getElementById('autoRefresh');
+
+        // ===== INIT Helpers =====
+        function initDashboard() {
+            if (ESP32_IP) esp32IpInput.value = ESP32_IP;
+            updateUI();
+            if (ESP32_IP) testConnection();
+        }
+        // ===== CONFIG =====
+        function saveConfig() {
+            const ip = esp32IpInput.value.trim();
+            if (!ip) {
+                addLog('Enter valid IP address', 'error');
+                return;
+            }
+            ESP32_IP = ip;
+            localStorage.setItem('esp32_ip', ip);
+            addLog(`IP saved: ${ip}`, 'success');
+            testConnection();
+        }
+
+        async function testConnection() {
+            try {
+                const res = await fetch(`http://${ESP32_IP}/api/test`, {signal: AbortSignal.timeout(3000)});
+                if (res.ok) {
+                    isConnected = true;
+                    addLog('Connected to ESP32', 'success');
+                    startAutoRefresh();
+                } else {
+                    throw new Error('Connection failed');
+                }
+            } catch (e) {
+                isConnected = false;
+                addLog(`Connection error: ${e.message}`, 'error');
+                stopAutoRefresh();
+            }
+            updateUI();
+        }
+        // ===== CONFIG =====
+        function saveConfig() {
+            const ip = esp32IpInput.value.trim();
+            if (!ip) {
+                addLog('Enter valid IP address', 'error');
+                return;
+            }
+            ESP32_IP = ip;
+            localStorage.setItem('esp32_ip', ip);
+            addLog(`IP saved: ${ip}`, 'success');
+            testConnection();
+        }
+
+        async function testConnection() {
+            try {
+                const res = await fetch(`http://${ESP32_IP}/api/test`, {signal: AbortSignal.timeout(3000)});
+                if (res.ok) {
+                    isConnected = true;
+                    addLog('Connected to ESP32', 'success');
+                    startAutoRefresh();
+                } else {
+                    throw new Error('Connection failed');
+                }
+            } catch (e) {
+                isConnected = false;
+                addLog(`Connection error: ${e.message}`, 'error');
+                stopAutoRefresh();
+            }
+            updateUI();
+        }
+
+        // ===== ACTUATORS (Optimized for responsiveness) =====
+        function controlActuator(name, action) {
+            // Instant UI update (optimistic)
+            applyActuator(name, action);
+            updateUI();
+            addLog(`${name} → ${action}`, 'success');
+            
+            // Send network request in background (non-blocking)
+            if (ESP32_IP) {
+                fetch(`http://${ESP32_IP}/api/actuator/${name}/${action}`, {
+                    method: 'POST',
+                    signal: AbortSignal.timeout(2000)
+                }).catch(() => {});
+            }
+        }
+
+        function applyActuator(name, action) {
+            if (name === 'led') {
+                actuators.led = (action === 'on');
+            } else if (name === 'cooler') {
+                actuators.cooler = (action === 'on');
+            } else if (name === 'umbrella') {
+                actuators.umbrella = action;
+            }
+        }
+
+        function deployAll() {
+            controlActuator('led', 'on');
+            controlActuator('cooler', 'on');
+            controlActuator('umbrella', 'open');
+        }
+
+        function retractAll() {
+            controlActuator('led', 'off');
+            controlActuator('cooler', 'off');
+            controlActuator('umbrella', 'close');
+        }
+
+        // ===== MODE (Optimized for instant feedback) =====
+        function setMode(mode) {
+            currentMode = mode;
+            // Instant visual update
+            const autoBtn = document.getElementById('autoBtn');
+            const manualBtn = document.getElementById('manualBtn');
+            
+            if (mode === 'auto') {
+                autoBtn.classList.add('active');
+                autoBtn.classList.remove('inactive');
+                manualBtn.classList.add('inactive');
+                manualBtn.classList.remove('active');
+            } else {
+                manualBtn.classList.add('active');
+                manualBtn.classList.remove('inactive');
+                autoBtn.classList.add('inactive');
+                autoBtn.classList.remove('active');
+            }
+            addLog(`Mode: ${mode}`, 'info');
+        }
+
+        // ===== LOG =====
+        function addLog(msg, type) {
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span class="log-message">${msg}</span><span class="log-time">${time}</span>`;
+            logContainer.insertBefore(entry, logContainer.firstChild);
+            if (logContainer.children.length > 50) logContainer.removeChild(logContainer.lastChild);
+            lastUpdateEl.textContent = time;
+        }
+
+        // ===== AUTO REFRESH =====
+        function startAutoRefresh() {
+            if (autoRefreshInterval) return;
+            autoRefreshInterval = setInterval(readSensors, 3000);
+            autoRefreshEl.textContent = 'On (3s)';
+            readSensors();
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+                autoRefreshEl.textContent = 'Off';
+            }
+        }
+
+        async function readSensors() {
+            if (!ESP32_IP) return;
+            try {
+                const res = await fetch(`http://${ESP32_IP}/api/sensor`, {signal: AbortSignal.timeout(5000)});
+                if (res.ok) {
+                    const data = await res.json();
+                    tempValueEl.textContent = data.temperature ? data.temperature.toFixed(1) : '--';
+                    humidityValueEl.textContent = data.humidity ? data.humidity.toFixed(1) : '--';
+                }
+            } catch (e) {
+                tempValueEl.textContent = '--';
+                humidityValueEl.textContent = '--';
+            }
+        }
+
+        // ===== UI UPDATE =====
+        function updateUI() {
+            // Always enable actuator buttons for demo/testing
+            statusPill.classList.toggle('status-online', isConnected);
+            statusPill.classList.toggle('status-offline', !isConnected);
+            statusText.textContent = isConnected ? 'Online' : 'Disconnected';
+            document.getElementById('deployAllBtn').disabled = false;
+            document.getElementById('retractAllBtn').disabled = false;
+            ['ledOn', 'ledOff', 'coolerOn', 'coolerOff', 'umbOpen', 'umbClose'].forEach(id => {
+                document.getElementById(id).disabled = false;
+            });
+
+            // Visual active/inactive state for actuator buttons
+            document.getElementById('ledOn').classList.toggle('active', actuators.led);
+            document.getElementById('ledOff').classList.toggle('active', !actuators.led);
+            document.getElementById('coolerOn').classList.toggle('active', actuators.cooler);
+            document.getElementById('coolerOff').classList.toggle('active', !actuators.cooler);
+            document.getElementById('umbOpen').classList.toggle('active', actuators.umbrella === 'open');
+            document.getElementById('umbClose').classList.toggle('active', actuators.umbrella === 'close');
+        }
+
+        // ===== LOGOUT & SESSION =====
+        function handleLogout() {
+            localStorage.setItem('loggedIn', 'false');
+            localStorage.removeItem('currentUser');
+            stopAutoRefresh();
+            window.location.href = 'login.html';
+        }
+
+        function checkLoginStatus() {
+            const isLogged = localStorage.getItem('loggedIn') === 'true';
+            const currentUser = localStorage.getItem('currentUser') || '';
+            if (currentUser) document.getElementById('userDisplay').textContent = currentUser;
+            return isLogged;
+        }
+
+        // Check login on page load and redirect if not authenticated
+        window.addEventListener('load', () => {
+            const logged = checkLoginStatus();
+            if (!logged) {
+                window.location.href = 'login.html';
+            } else {
+                initDashboard();
+                startAutoRefresh();
+            }
+        });
+    </script>
+</body>
+</html>
